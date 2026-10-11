@@ -26,8 +26,8 @@ import { pluginCustomCopyButton } from "./src/plugins/expressive-code/custom-cop
 
 // https://astro.build/config
 export default defineConfig({
-	site: "https://example.github.io/", // 部署后改成你的实际地址,如 https://<用户名>.github.io
-	base: "/", // 若部署到 https://<用户名>.github.io/<仓库名>/,改为 '/<仓库名>/'
+	site: "https://levi0038.github.io/Levi38_blog/", // 部署后改成你的实际地址,如 https://<用户名>.github.io
+	base: "/Levi38_blog/", // 若部署到 https://<用户名>.github.io/<仓库名>/,改为 '/<仓库名>/'
 	trailingSlash: "always",
 	integrations: [
 		tailwind({
