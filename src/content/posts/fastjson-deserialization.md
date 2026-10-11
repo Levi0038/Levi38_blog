@@ -25,19 +25,19 @@ draft: false
 
 来执行ldap或rmi的恶意代码
 
-![image-20260923201434681](/images/fastjson/image-20260923201434681.png)
+![image-20260923201434681](/Levi38_blog/images/fastjson/image-20260923201434681.png)
 
 这个类确实存在dataSource的setter 所以我们可以控制他的值
 
-![image-20260923202638917](/images/fastjson/image-20260923202638917.png)
+![image-20260923202638917](/Levi38_blog/images/fastjson/image-20260923202638917.png)
 
 所以下一步就是找到一个调用connect方法的**setter**，为什么不是getter呢，根据我们前一次的分析知道getter方法是在反序列化执行完setter后走到toJSON的时候才会触发getter，或者要满足几种条件（比如返回值的约束等等），这里返回值已经不满足条件并且前面要完全不报错很困难，所以直接选择**必定触发**的setter
 
-![image-20260923203037781](/images/fastjson/image-20260923203037781.png)
+![image-20260923203037781](/Levi38_blog/images/fastjson/image-20260923203037781.png)
 
 找到了在setAutoCommit中直接调用了connect方法，autoCommit是一个布尔值
 
-![image-20260923203727858](/images/fastjson/image-20260923203727858.png)
+![image-20260923203727858](/Levi38_blog/images/fastjson/image-20260923203727858.png)
 
 所以现在就可以直接写利用代码了
 
@@ -56,7 +56,7 @@ public class FastjsonJdbcRowSetImpl {
 
 我用yakit起了一个ldap服务 直接部署RuntimeExec恶意类（因为测试版本小于8u191）最终成功利用
 
-![image-20260923204053329](/images/fastjson/image-20260923204053329.png)
+![image-20260923204053329](/Levi38_blog/images/fastjson/image-20260923204053329.png)
 
 **这里有一个细节值得注意**
 
@@ -76,7 +76,7 @@ public class FastjsonJdbcRowSetImpl {
 
 根据这里的逻辑我们需要class_name满足以\$\$BCEL$$开头，就能执行defineClass，在defineClass之前还进行了createClass，在这个方法里对class_name进行了解码，所以我们传入前还需要进行对应的编码
 
-![image-20260923210107349](/images/fastjson/image-20260923210107349.png)
+![image-20260923210107349](/Levi38_blog/images/fastjson/image-20260923210107349.png)
 
 而要执行这个loadClass方法，需要用到**tomcat**内的一个类BasicDataSource
 
@@ -86,13 +86,13 @@ public class FastjsonJdbcRowSetImpl {
 
 刚好这里的ClassLoader和driverClassName都具有setter
 
-![image-20260923212436170](/images/fastjson/image-20260923212436170.png)
+![image-20260923212436170](/Levi38_blog/images/fastjson/image-20260923212436170.png)
 
 同一个类的createDataSource又调用了createConnectionFactory方法
 
 而这个类的getConnection里又调用了createDataSource，所以两步就找到了对应的getter
 
-![image-20260923213327851](/images/fastjson/image-20260923213327851.png)
+![image-20260923213327851](/Levi38_blog/images/fastjson/image-20260923213327851.png)
 
 这里不同的是我们书写的时候并不需要把connection写出来，因为这是触发的getter，getter不是在反序列化中触发的，而是在后续的toJSON中触发，他会自动调用全部的getter
 
@@ -122,7 +122,7 @@ public class FastjsonBcel {
 }
 ```
 
-#### ![image-20260923214532234](/images/fastjson/image-20260923214532234.png)局限性
+#### ![image-20260923214532234](/Levi38_blog/images/fastjson/image-20260923214532234.png)局限性
 
 依赖Tomcat，且仅适用于 JDK 8u251 之前（之后JDK 内置的BCEL ClassLoader就被移除了）
 
@@ -136,41 +136,41 @@ public class FastjsonBcel {
 
 ## 1.2.25-1.2.47版本利用
 
-当我们把版本升级到1.2.25再使用BCEL链尝试弹计算器会发现失败并且报错中提示 autoType is not support![image-20260924101116847](/images/fastjson/image-20260924101116847.png)
+当我们把版本升级到1.2.25再使用BCEL链尝试弹计算器会发现失败并且报错中提示 autoType is not support![image-20260924101116847](/Levi38_blog/images/fastjson/image-20260924101116847.png)
 
 我们跟进调试后看到和上一个版本不同的是 在loadClass之前进行了checkAutoType的校验
 
 校验代码很长 简单来说就是加入了白名单和黑名单的机制，并且引入了autoTypeSupport这个开关 而他默认是关闭的
 
-![image-20260924101352817](/images/fastjson/image-20260924101352817.png)
+![image-20260924101352817](/Levi38_blog/images/fastjson/image-20260924101352817.png)
 
-![image-20260924101451920](/images/fastjson/image-20260924101451920.png)
+![image-20260924101451920](/Levi38_blog/images/fastjson/image-20260924101451920.png)
 
 在这个版本之前有一些**绕过黑名单检测**的方式，但都只限定于特定版本，利用价值不大
 
 **最直接**的方式是利用 Fastjson 的 **mappings 缓存**，如果缓存命中就直接返回，不管是否在黑名单  autoType开关是否打开，都会直接返回
 
-![image-20260924102346199](/images/fastjson/image-20260924102346199.png)
+![image-20260924102346199](/Levi38_blog/images/fastjson/image-20260924102346199.png)
 
 所以现在我们就去看怎么写入缓存 在loadClass里写入了类
 
-![image-20260924103706945](/images/fastjson/image-20260924103706945.png)
+![image-20260924103706945](/Levi38_blog/images/fastjson/image-20260924103706945.png)
 
 在MiscCodec里的反序列化方法中调用了这个loadClass 他的逻辑是直接把strVal作为Class加载进mappings
 
-![image-20260924103812608](/images/fastjson/image-20260924103812608.png)
+![image-20260924103812608](/Levi38_blog/images/fastjson/image-20260924103812608.png)
 
 而这个MiscCodec实现了序列化器和反序列化器
 
-![image-20260924103940990](/images/fastjson/image-20260924103940990.png)
+![image-20260924103940990](/Levi38_blog/images/fastjson/image-20260924103940990.png)
 
 在之前的代码中我们知道在反序列化时反序列化器其实是来自config当中
 
 而config其实事先就写入了一些反序列化器 当我们反序列化的类是Class时就会调用MiscCodec这个反序列化器
 
-也即是说我们可以先反序列化恶意类使其写入mappings缓存中，再进行调用就直接从mappings里拿了![image-20260924104056706](/images/fastjson/image-20260924104056706.png)
+也即是说我们可以先反序列化恶意类使其写入mappings缓存中，再进行调用就直接从mappings里拿了![image-20260924104056706](/Levi38_blog/images/fastjson/image-20260924104056706.png)
 
-![image-20260924104323068](/images/fastjson/image-20260924104323068.png)
+![image-20260924104323068](/Levi38_blog/images/fastjson/image-20260924104323068.png)
 
 
 
@@ -194,7 +194,7 @@ public class FastjsonBefore1247 {
 
 
 
-![image-20260924105418012](/images/fastjson/image-20260924105418012.png)
+![image-20260924105418012](/Levi38_blog/images/fastjson/image-20260924105418012.png)
 
 
 
@@ -220,9 +220,9 @@ fastjson 会用 getResourceAsStream方法去读取这个类的字节
 
 `{"@type":"http://2130706433:1314/probe"}`
 
-![image-20260925173914159](/images/fastjson/image-20260925173914159.png)
+![image-20260925173914159](/Levi38_blog/images/fastjson/image-20260925173914159.png)
 
-![image-20260925174049186](/images/fastjson/image-20260925174049186.png)
+![image-20260925174049186](/Levi38_blog/images/fastjson/image-20260925174049186.png)
 
 注意只有 Spring Boot 的 fat jar 类加载器（`LaunchedURLClassLoader`）才会把一个长得像 URL 的类名真正变成一次请求 ，如果用普通的 `java -jar` 跑，或者作为 WAR 部署到一台普通的 Tomcat 上，就会把那个名字当成本地文件路径来处理，不会向外发起任何请求
 
@@ -337,7 +337,7 @@ $body = '{"@type":"http://2130706433:1314/probe"}'
 >>   -Body $body
 ```
 
-![image-20260925182317610](/images/fastjson/image-20260925182317610.png)
+![image-20260925182317610](/Levi38_blog/images/fastjson/image-20260925182317610.png)
 
 测试发现确实向1314端口发送了请求 SSRF成功
 
@@ -347,7 +347,7 @@ $body = '{"@type":"http://2130706433:1314/probe"}'
 
 如果我们 jar 里的那个类带有 JSONType，fastjson 就会加载它并把它返回，而且这一步发生在 "autoType is not support" 之前
 
-![image-20260925183343971](/images/fastjson/image-20260925183343971.png)
+![image-20260925183343971](/Levi38_blog/images/fastjson/image-20260925183343971.png)
 
 所以现在我们的计划就是让 fastjson 通过 `getResourceAsStream` 从一个我们可控的地方拿到我们的类，创建实例并运行恶意代码
 
@@ -359,7 +359,7 @@ $body = '{"@type":"http://2130706433:1314/probe"}'
 
 但是执行也是有条件的
 
-![image-20260925211601694](/images/fastjson/image-20260925211601694.png)
+![image-20260925211601694](/Levi38_blog/images/fastjson/image-20260925211601694.png)
 
 我们在测试时
 
@@ -369,7 +369,7 @@ $body = '{"@type":"http://2130706433:1314/probe"}'
 
 真实环境里这个设置不需要显示设置 可能是直接开放的 所以我们可以利用
 
-![image-20260925213150950](/images/fastjson/image-20260925213150950.png)
+![image-20260925213150950](/Levi38_blog/images/fastjson/image-20260925213150950.png)
 
 ### linux端jdk全版本RCE
 
@@ -379,7 +379,7 @@ $body = '{"@type":"http://2130706433:1314/probe"}'
 
 这里就需要借助linux中的**/proc/self/fd**
 
-![image-20260925213536752](/images/fastjson/image-20260925213536752.png)
+![image-20260925213536752](/Levi38_blog/images/fastjson/image-20260925213536752.png)
 
 我们只需要第一次的时候正常让他下载远程jar到临时文件中
 
@@ -403,7 +403,7 @@ JVM 规定：字节码里的 this_class 必须和你申报的名字一字不差�
 
 说实话这个对齐机制我也没有完全弄懂，但是不影响漏洞复现
 
-![image-20260925225525260](/images/fastjson/image-20260925225525260.png)
+![image-20260925225525260](/Levi38_blog/images/fastjson/image-20260925225525260.png)
 
 
 

