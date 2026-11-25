@@ -1,5 +1,5 @@
 ---
-title: glacierctf frozen-query 题解
+title: frozen-query WP
 description: 2026 年新 HTTP 请求方法 QUERY 引发的缓存投毒与解题过程
 published: 2026-11-25
 tags: [CTF, Web, glacierctf]
