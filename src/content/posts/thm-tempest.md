@@ -3,7 +3,7 @@ title: THM Tempest 靶场通关笔记
 description: 通过日志和流量包分析攻击者攻击行为的 THM 靶场练习
 published: 2026-11-25
 tags: [应急响应, 流量分析, TryHackMe]
-category: 笔记
+category: 题目
 draft: false
 ---
 
